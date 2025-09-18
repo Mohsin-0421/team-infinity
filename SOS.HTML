@@ -142,7 +142,6 @@
       screens[name].classList.add("active");
     }
 
-    // ---------- ACCOUNT CREATION ----------
     function handleSignup() {
       const id = document.getElementById("signupId").value.trim();
       const pw = document.getElementById("signupPw").value.trim();
@@ -153,7 +152,7 @@
       localStorage.setItem("collegeId", id);
       localStorage.setItem("password", pw);
       document.getElementById("signupMsg").textContent = "✅ Account created! Please login.";
-      setTimeout(()=> showScreen("login"), 1500);
+      setTimeout(() => showScreen("login"), 1500);
     }
 
     function handleLogin() {
@@ -172,12 +171,12 @@
       showScreen("login");
     }
 
-    // ---------- EMERGENCY FLOW ----------
     function playAlarm() {
       const alarm = document.getElementById("alarmSound");
       alarm.volume = 0.5;
-      alarm.play().catch(()=>console.log("Autoplay blocked"));
+      alarm.play().catch(() => console.log("Autoplay blocked"));
     }
+
     function stopAlarm() {
       const alarm = document.getElementById("alarmSound");
       alarm.pause();
@@ -207,8 +206,10 @@
       contacts.forEach(c => {
         const li = document.createElement("li");
         li.id = `contact-${c.id}`;
-        li.innerHTML = `${c.name} (${c.type}) - <a href="tel:${c.phone}">${c.phone}</a>
-                        <span class="status pending">⌛ Pending</span>`;
+        li.innerHTML = `
+          ${c.name} (${c.type}) - <a href="tel:${c.phone}">${c.phone}</a>
+          <span class="status pending">⌛ Pending</span>
+        `;
         list.appendChild(li);
       });
 
@@ -219,12 +220,16 @@
             el.textContent = "✅ Sent";
             el.className = "status sent";
           }
-        }, (i+1)*1000);
+        }, (i + 1) * 1000);
       });
 
       getLocation((loc, err) => {
-        if (loc) document.getElementById("locationInfo").textContent = `📍 ${loc.latitude}, ${loc.longitude}`;
-        if (err) document.getElementById("locationError").textContent = err;
+        if (loc) {
+          document.getElementById("locationInfo").textContent = `📍 ${loc.latitude}, ${loc.longitude}`;
+        }
+        if (err) {
+          document.getElementById("locationError").textContent = err;
+        }
       });
 
       setTimeout(() => handleTracking(), 5000);
@@ -233,19 +238,24 @@
     function handleTracking() {
       showScreen("tracking");
       getLocation(updateTracking);
-      trackingInterval = setInterval(()=>getLocation(updateTracking), 15000);
+      trackingInterval = setInterval(() => getLocation(updateTracking), 15000);
     }
 
     function updateTracking(loc, err) {
-      if (loc) document.getElementById("trackingLocation").textContent = `Lat: ${loc.latitude}, Lng: ${loc.longitude}`;
-      if (err) document.getElementById("trackingError").textContent = err;
+      if (loc) {
+        document.getElementById("trackingLocation").textContent = `Lat: ${loc.latitude}, Lng: ${loc.longitude}`;
+        document.getElementById("trackingError").textContent = "";
+      }
+      if (err) {
+        document.getElementById("trackingError").textContent = err;
+      }
     }
 
     function handleSafe() {
       showScreen("safe");
       stopAlarm();
       clearInterval(trackingInterval);
-      setTimeout(()=>showScreen("danger"), 3000);
+      setTimeout(() => showScreen("danger"), 3000);
     }
   </script>
 </body>
