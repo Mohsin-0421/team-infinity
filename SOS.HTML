@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Emergency App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .screen { display: none; flex-direction: column; align-items: center; text-align: center; width: 100%; max-width: 400px; padding: 20px; }
+    .active { display: flex; }
+
+    h1 { font-size: 2rem; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.4); }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 12px 25px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 12px;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    }
+    button:hover { transform: scale(1.05); }
+
+    .signup-btn { background: linear-gradient(145deg, #2196f3, #0d47a1); }
+    .login-btn { background: linear-gradient(145deg, #4caf50, #1b5e20); }
+    .panic-btn { background: linear-gradient(145deg, #ff1e56, #d4003b); animation: pulse 1.5s infinite; }
+    .safe-btn { background: linear-gradient(145deg, #28a745, #1c7c31); }
+    .logout-btn { background: linear-gradient(145deg, #ff9800, #e65100); }
+
+    ul { list-style: none; width: 100%; margin-top: 20px; }
+    li { background: rgba(255,255,255,0.1); padding: 10px 15px; margin: 8px 0; border-radius: 10px; display: flex; justify-content: space-between; }
+    .status { font-weight: bold; }
+    .sent { color: #00ff88; }
+    .pending { color: #ffd700; }
+    .error { color: #ff4d4d; }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,30,86,0.7); }
+      70% { box-shadow: 0 0 0 30px rgba(255,30,86,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,30,86,0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SIGNUP SCREEN -->
+  <div id="signupScreen" class="screen active">
+    <h1>🆕 Create Account</h1>
+    <input type="text" id="signupId" placeholder="College ID Number"/>
+    <input type="password" id="signupPw" placeholder="Create Password"/>
+    <button class="signup-btn" onclick="handleSignup()">Sign Up</button>
+    <p id="signupMsg"></p>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="screen">
+    <h1>🔐 Login</h1>
+    <input type="text" id="loginId" placeholder="College ID Number"/>
+    <input type="password" id="loginPw" placeholder="Password"/>
+    <button class="login-btn" onclick="handleLogin()">Login</button>
+    <p id="loginMsg"></p>
+  </div>
+
+  <!-- DANGER SCREEN -->
+  <div id="dangerScreen" class="screen">
+    <h1>⚠ DANGER</h1>
+    <button class="panic-btn" onclick="handlePanic()">🚨 PANIC</button>
+    <button class="logout-btn" onclick="handleLogout()">🔒 Logout</button>
+  </div>
+
+  <!-- ALERT SCREEN -->
+  <div id="alertScreen" class="screen">
+    <h1>🚨 Sending Alerts...</h1>
+    <ul id="contactList"></ul>
+    <p id="locationInfo"></p>
+    <p id="locationError" class="error"></p>
+  </div>
+
+  <!-- TRACKING SCREEN -->
+  <div id="trackingScreen" class="screen">
+    <h1>📡 Tracking Active...</h1>
+    <p id="trackingLocation"></p>
+    <p id="trackingError" class="error"></p>
+    <button class="safe-btn" onclick="handleSafe()">✅ I Am Safe</button>
+  </div>
+
+  <!-- SAFE SCREEN -->
+  <div id="safeScreen" class="screen">
+    <h1>✅ You Are Safe</h1>
+  </div>
+
+  <!-- Alarm -->
+  <audio id="alarmSound" loop>
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+  </audio>
+
+  <script>
+    const screens = {
+      signup: document.getElementById("signupScreen"),
+      login: document.getElementById("loginScreen"),
+      danger: document.getElementById("dangerScreen"),
+      alert: document.getElementById("alertScreen"),
+      tracking: document.getElementById("trackingScreen"),
+      safe: document.getElementById("safeScreen"),
+    };
+
+    const contacts = [
+      { id: "1", name: "Mohsin", type: "family", phone: "8500799399" },
+      { id: "2", name: "Mustaqeem", type: "family", phone: "9515105424" },
+      { id: "3", name: "Police", type: "emergency", phone: "100" },
+      { id: "4", name: "Ambulance", type: "emergency", phone: "108" },
+    ];
+
+    let trackingInterval;
+
+    function showScreen(name) {
+      Object.values(screens).forEach(s => s.classList.remove("active"));
+      screens[name].classList.add("active");
+    }
+
+    // ---------- ACCOUNT CREATION ----------
+    function handleSignup() {
+      const id = document.getElementById("signupId").value.trim();
+      const pw = document.getElementById("signupPw").value.trim();
+      if (!id || !pw) {
+        document.getElementById("signupMsg").textContent = "⚠ Enter ID & Password";
+        return;
+      }
+      localStorage.setItem("collegeId", id);
+      localStorage.setItem("password", pw);
+      document.getElementById("signupMsg").textContent = "✅ Account created! Please login.";
+      setTimeout(()=> showScreen("login"), 1500);
+    }
+
+    function handleLogin() {
+      const id = document.getElementById("loginId").value.trim();
+      const pw = document.getElementById("loginPw").value.trim();
+      const savedId = localStorage.getItem("collegeId");
+      const savedPw = localStorage.getItem("password");
+      if (id === savedId && pw === savedPw) {
+        showScreen("danger");
+      } else {
+        document.getElementById("loginMsg").textContent = "❌ Invalid ID or Password";
+      }
+    }
+
+    function handleLogout() {
+      showScreen("login");
+    }
+
+    // ---------- EMERGENCY FLOW ----------
+    function playAlarm() {
+      const alarm = document.getElementById("alarmSound");
+      alarm.volume = 0.5;
+      alarm.play().catch(()=>console.log("Autoplay blocked"));
+    }
+    function stopAlarm() {
+      const alarm = document.getElementById("alarmSound");
+      alarm.pause();
+      alarm.currentTime = 0;
+    }
+
+    function getLocation(callback) {
+      if (!navigator.geolocation) {
+        callback(null, "Geolocation not supported");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          callback({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }, null);
+        },
+        err => callback(null, err.message),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    function handlePanic() {
+      showScreen("alert");
+      playAlarm();
+
+      const list = document.getElementById("contactList");
+      list.innerHTML = "";
+      contacts.forEach(c => {
+        const li = document.createElement("li");
+        li.id = `contact-${c.id}`;
+        li.innerHTML = `${c.name} (${c.type}) - <a href="tel:${c.phone}">${c.phone}</a>
+                        <span class="status pending">⌛ Pending</span>`;
+        list.appendChild(li);
+      });
+
+      contacts.forEach((c, i) => {
+        setTimeout(() => {
+          const el = document.querySelector(`#contact-${c.id} .status`);
+          if (el) {
+            el.textContent = "✅ Sent";
+            el.className = "status sent";
+          }
+        }, (i+1)*1000);
+      });
+
+      getLocation((loc, err) => {
+        if (loc) document.getElementById("locationInfo").textContent = `📍 ${loc.latitude}, ${loc.longitude}`;
+        if (err) document.getElementById("locationError").textContent = err;
+      });
+
+      setTimeout(() => handleTracking(), 5000);
+    }
+
+    function handleTracking() {
+      showScreen("tracking");
+      getLocation(updateTracking);
+      trackingInterval = setInterval(()=>getLocation(updateTracking), 15000);
+    }
+
+    function updateTracking(loc, err) {
+      if (loc) document.getElementById("trackingLocation").textContent = `Lat: ${loc.latitude}, Lng: ${loc.longitude}`;
+      if (err) document.getElementById("trackingError").textContent = err;
+    }
+
+    function handleSafe() {
+      showScreen("safe");
+      stopAlarm();
+      clearInterval(trackingInterval);
+      setTimeout(()=>showScreen("danger"), 3000);
+    }
+  </script>
+</body>
+</html>
